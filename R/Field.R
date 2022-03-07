@@ -28,26 +28,65 @@ ForeignKey = function(entity, field) {
   env_as(.FK_DECL)
 }
 
-StringField         = \(name, parser = \(x) as.character(x[[name]])[1], ...) .field(name, "VARCHAR", parser = parser, ...)
-StringArrayField    = \(name, parser = \(x) as.character(x[[name]]), ...) .field(name, "VARCHAR[]", parser = parser, ...)
-DoubleField         = \(name, parser = \(x) as.numeric(x[[name]])[1], ...) .field(name, "DOUBLE PRECISION", parser = parser, ...)
-DoubleArrayField    = \(name, parser = \(x) as.numeric(x[[name]]), ...) .field(name, "DOUBLE PRECISION[]", parser = parser, ...)
-IntegerField        = \(name, parser = \(x) as.integer(x[[name]])[1], ...) .field(name, "INTEGER", parser = parser, ...)
-IntegerArrayField   = \(name, parser = \(x) as.integer(x[[name]]), ...) .field(name, "INTEGER[]", parser = parser, ...)
-BigIntField         = \(name, parser = \(x) bit64::as.integer64(x[[name]])[1], ...) .field(name, "BIGINT", parser = parser, ...)
-BigIntArrayField    = \(name, parser = \(x) bit64::as.integer64(x[[name]]), ...) .field(name, "BIGINT[]", parser = parser, ...)
-DateField           = \(name, parser = \(x) .date_parser(as.character(x[[name]]))[1], ...) .field(name, "DATE", parser = parser, ...)
-DateArrayField      = \(name, parser = \(x) .date_parser(as.character(x[[name]])), ...) .field(name, "DATE[]", parser = parser, ...)
-TimestampField      = \(name, parser = \(x) .timestamp_parser(as.character(x[[name]]))[1], ...) .field(name, "TIMESTAMP", parser = parser, ...)
-TimestampArrayField = \(name, parser = \(x) .timestamp_parser(as.character(x[[name]])), ...) .field(name, "TIMESTAMP[]", parser = parser, ...)
-UuidField           = \(name, parser = \(x) as.character(x[[name]])[1], ...) .field(name, "UUID", parser = parser, ...)
+StringField = function(name, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
+  Field(name, "VARCHAR", parser = parser, .n = .n, ...)
+}
 
-UuidPrimaryKey = \(name, ...) UuidField(name, pk = TRUE, default = uuid::UUIDgenerate, .n = 4L, ...)
+StringArrayField = function(name, parser = \(x) as.character(x[[name]]), .n = 2L, ...) {
+  Field(name, "VARCHAR[]", parser = parser, .n = .n, ...)
+}
+
+DoubleField = function(name, parser = \(x) as.numeric(x[[name]])[1], .n = 2L, ...) {
+  Field(name, "DOUBLE PRECISION", parser = parser, .n = .n, ...)
+}
+
+DoubleArrayField = function(name, parser = \(x) as.numeric(x[[name]]), .n = 2L, ...) {
+  Field(name, "DOUBLE PRECISION[]", parser = parser, .n = .n, ...)
+}
+
+IntegerField = function(name, parser = \(x) as.integer(x[[name]])[1], .n = 2L, ...) {
+  Field(name, "INTEGER", parser = parser, .n = .n, ...)
+}
+
+IntegerArrayField = function(name, parser = \(x) as.integer(x[[name]]), .n = 2L, ...) {
+  Field(name, "INTEGER[]", parser = parser, .n = .n, ...)
+}
+
+BigIntField = function(name, parser = \(x) bit64::as.integer64(x[[name]])[1], .n = 2L, ...) {
+  Field(name, "BIGINT", parser = parser, .n = .n, ...)
+}
+
+BigIntArrayField = function(name, parser = \(x) bit64::as.integer64(x[[name]]), .n = 2L, ...) {
+  Field(name, "BIGINT[]", parser = parser, .n = .n, ...)
+}
+
+DateField = function(name, parser = \(x) .date_parser(as.character(x[[name]]))[1], .n = 2L, ...) {
+  Field(name, "DATE", parser = parser, .n = .n, ...)
+}
+
+DateArrayField = function(name, parser = \(x) .date_parser(as.character(x[[name]])), .n = 2L, ...) {
+  Field(name, "DATE[]", parser = parser, .n = .n, ...)
+}
+
+TimestampField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]]))[1], .n = 2L, ...) {
+  Field(name, "TIMESTAMP", parser = parser, .n = .n, ...)
+}
+
+TimestampArrayField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]])), .n = 2L, ...) {
+  Field(name, "TIMESTAMP[]", parser = parser, .n = .n, ...)
+}
+
+UuidField = function(name, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
+  Field(name, "UUID", parser = parser, .n = .n, ...)
+}
+
+UuidPrimaryKey = function(name, ...) {
+  UuidField(name, pk = TRUE, default = uuid::UUIDgenerate, .n = 3L, ...)
+}
 
 timestamps = function() {
-  entity = parent.frame()
-  entity$created_at = TimestampField("created_at", default = utctime, updatable = FALSE, .only_val = TRUE)
-  entity$updated_at = TimestampField("updated_at", default = utctime, update_trigger = utctime, .only_val = TRUE)
+  TimestampField("created_at", default = utctime, updatable = FALSE, .n = 3L)
+  TimestampField("updated_at", default = utctime, update_trigger = utctime, .n = 3L)
 }
 
 # private
@@ -55,11 +94,8 @@ timestamps = function() {
 .FIELD_DECL = "fielddecl"
 .FK_DECL = "foreignkeydecl"
 
-.field = \(name, type, .n = 3L, ...) Field(name, type, .n = .n, ...)
-
 .has_default_val  = \(f) is_non_null_scalar(f$default)
 .has_default      = \(f) is.function(f$default) || .has_default_val(f)
-.is_required      = \(f) f$pk || .has_default(f) || !f$nullable
 .is_fk            = \(f) is(f$fk, .FK_DECL)
 .is_valid_fk      = \(f) is.null(f$fk) || .is_fk(f)
 .cant_be_null     = \(f) f$pk || .is_fk(f) || f$unique || .has_default(f)

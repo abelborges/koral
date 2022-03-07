@@ -1,5 +1,5 @@
-create_table = function(entity, drop_if_exists) UseMethod("create_table")
-create_table.entitydecl = function(entity, drop_if_exists = FALSE) {
+create_table = function(entity, drop_if_exists = FALSE) {
+  assert_class(entity, .ENTITY_DECL)
   conn = attr(entity, "get_conn")(); on.exit(DBI::dbDisconnect(conn))
   table = attr(entity, "table")
 
@@ -16,8 +16,8 @@ create_table.entitydecl = function(entity, drop_if_exists = FALSE) {
   DBI::dbCreateTable(conn, table, columns)
 }
 
-drop_table = function(entity) UseMethod("drop_table")
-drop_table.entitydecl = function(entity) {
+drop_table = function(entity) {
+  assert_class(entity, .ENTITY_DECL)
   conn = attr(entity, "get_conn")(); on.exit(DBI::dbDisconnect(conn))
   table = attr(entity, "table")
 
@@ -29,8 +29,8 @@ drop_table.entitydecl = function(entity) {
   DBI::dbRemoveTable(conn, table)
 }
 
-insert = function(entity, x) UseMethod("insert")
-insert.entitydecl = function(entity, x) {
+insert = function(entity, x) {
+  assert_class(entity, .ENTITY_DECL)
   conn = attr(entity, "get_conn")(); on.exit(DBI::dbDisconnect(conn))
   table = attr(entity, "table")
 
@@ -39,8 +39,8 @@ insert.entitydecl = function(entity, x) {
   values = names(x) |>
     map(\(f) entity[[f]]$db_parser(paste0("?", f))) |>
     paste(collapse = ", ")
-  stmt = glue::glue("INSERT INTO {table}({keys}) VALUES ({values});")
-  DBI::dbExecute(conn, DBI::sqlInterpolate(conn, stmt, .dots = x))
+  stmt = glue::glue("INSERT INTO {table}({keys}) VALUES ({values}) RETURNING *;")
+  DBI::dbGetQuery(conn, DBI::sqlInterpolate(conn, stmt, .dots = x))
 }
 
 # private
@@ -49,11 +49,12 @@ insert.entitydecl = function(entity, x) {
 
 # TODO: parse/insert in C++
 .from_input = function(entity, x) {
+  .stop = \(k) stop(glue::glue("missing value declaration for field '{k}'"))
   output = list()
   for (field in entity) {
+    k = field$name; v = x[[k]]
+    if (!field$nullable && is.null(v)) .stop(k)
     if (field$transient) next
-
-    k = field$name
 
     if (field$deduced || !is.null(x[[k]])) {
       output[[k]] = field$parser(x)
@@ -67,7 +68,7 @@ insert.entitydecl = function(entity, x) {
 
     if (field$nullable) next
 
-    stop(glue::glue("missing value declaration for field '{k}'"))
+    .stop(k)
   }
   output
 }
@@ -75,7 +76,7 @@ insert.entitydecl = function(entity, x) {
 .sql_field_decl = function(field) {
   type = field$type
   pk = if (field$pk) " PRIMARY KEY" else ""
-  notnull = if (.is_required(field)) " NOT NULL" else ""
+  notnull = if (!field$nullable) " NOT NULL" else ""
   isunique = if (field$unique) " UNIQUE" else ""
   glue::glue("{type}{pk}{notnull}{isunique}")
 }
