@@ -1,6 +1,6 @@
 create_table = function(entity, drop_if_exists = FALSE) {
-  assert_class(entity, .ENTITY_DECL)
-  conn = attr(entity, "get_conn")(); on.exit(DBI::dbDisconnect(conn))
+  assert_class(.ENTITY_DECL, entity)
+  conn = .get_conn(); on.exit(DBI::dbDisconnect(conn))
   table = attr(entity, "table")
 
   if (DBI::dbExistsTable(conn, table)) {
@@ -11,14 +11,12 @@ create_table = function(entity, drop_if_exists = FALSE) {
     DBI::dbRemoveTable(conn, table)
   }
 
-  fields = .db_fields(entity)
-  columns = fields |> map(.sql_field_decl) |> setNames(names(fields))
-  DBI::dbCreateTable(conn, table, columns)
+  DBI::dbExecute(conn, .create_table_sql(entity))
 }
 
 drop_table = function(entity) {
-  assert_class(entity, .ENTITY_DECL)
-  conn = attr(entity, "get_conn")(); on.exit(DBI::dbDisconnect(conn))
+  assert_class(.ENTITY_DECL, entity)
+  conn = .get_conn(); on.exit(DBI::dbDisconnect(conn))
   table = attr(entity, "table")
 
   if (!DBI::dbExistsTable(conn, table)) {
@@ -30,15 +28,15 @@ drop_table = function(entity) {
 }
 
 insert = function(entity, x) {
-  assert_class(entity, .ENTITY_DECL)
-  conn = attr(entity, "get_conn")(); on.exit(DBI::dbDisconnect(conn))
+  assert_class(.ENTITY_DECL, entity)
+  conn = .get_conn(); on.exit(DBI::dbDisconnect(conn))
   table = attr(entity, "table")
 
   x = .from_input(entity, x)
-  keys = paste(names(x), collapse = ", ")
+  keys = x |> names() |> mkstring(", ")
   values = names(x) |>
-    map(\(f) entity[[f]]$db_parser(paste0("?", f))) |>
-    paste(collapse = ", ")
+    map(\(f) entity[[f]]$db_parser(prepend(f, "?"))) |>
+    mkstring(", ")
   stmt = glue::glue("INSERT INTO {table}({keys}) VALUES ({values}) RETURNING *;")
   DBI::dbGetQuery(conn, DBI::sqlInterpolate(conn, stmt, .dots = x))
 }
@@ -49,12 +47,16 @@ insert = function(entity, x) {
 
 # TODO: parse/insert in C++
 .from_input = function(entity, x) {
-  .stop = \(k) stop(glue::glue("missing value declaration for field '{k}'"))
+  .stop = \(k) stop(sprintf("missing value declaration for field '%s'", k))
   output = list()
   for (field in entity) {
-    k = field$name; v = x[[k]]
-    if (!field$nullable && is.null(v)) .stop(k)
-    if (field$transient) next
+    k = field$name
+    v = x[[k]]
+
+    if (field$transient) {
+      if (!field$nullable && is.null(v)) .stop(k)
+      next
+    }
 
     if (field$deduced || !is.null(x[[k]])) {
       output[[k]] = field$parser(x)
@@ -73,10 +75,15 @@ insert = function(entity, x) {
   output
 }
 
-.sql_field_decl = function(field) {
-  type = field$type
-  pk = if (field$pk) " PRIMARY KEY" else ""
-  notnull = if (!field$nullable) " NOT NULL" else ""
-  isunique = if (field$unique) " UNIQUE" else ""
-  glue::glue("{type}{pk}{notnull}{isunique}")
+.as_sql_list = function(xs) {
+  assert_class("character", xs)
+  DBI::dbQuoteLiteral(DBI::ANSI(), xs) |>
+    as.character() |>
+    mkstring("(", ", ", ")")
+}
+
+.get_conn = function() {
+  dbargs = getOption(.KORAL_DBARGS)
+  if (is.null(dbargs)) stop(glue::glue("R option {.KORAL_DBARGS} should be set"))
+  do.call(DBI::dbConnect, dbargs)
 }

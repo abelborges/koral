@@ -11,6 +11,7 @@ Field = function(
   update_trigger = NULL,
   parser = NULL,
   db_parser = identity,
+  db_check = NULL,
   deduced = FALSE,
   .only_val = FALSE,
   .n = 1L
@@ -22,9 +23,13 @@ Field = function(
   entity[[f$name]] = f
 }
 
-ForeignKey = function(entity, field) {
-  assert_class(entity, .ENTITY_DECL)
-  assert_class(field, .FIELD_DECL)
+ForeignKey = function(entity, field = NULL) {
+  assert_class(.ENTITY_DECL, entity)
+  if (is.null(field)) {
+    if (.has_composite_pk(entity)) stop("Must specify field name for entities with composite PKs")
+    field = entity |> where("pk") |> map("name") |> first_scalar()
+  }
+  assert_class("character", field)
   env_as(.FK_DECL)
 }
 
@@ -34,6 +39,14 @@ StringField = function(name, parser = \(x) as.character(x[[name]])[1], .n = 2L, 
 
 StringArrayField = function(name, parser = \(x) as.character(x[[name]]), .n = 2L, ...) {
   Field(name, "VARCHAR[]", parser = parser, .n = .n, ...)
+}
+
+EnumField = function(name, values, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
+  assert_class("character", values)
+  if (length(values) == 0L) stop("Empty enum `values`")
+  if (length(values) == 1L) warning("Declaring enum field with a single value")
+  db_check = sprintf("CHECK (%s IN %s)", name, .as_sql_list(values))
+  Field(name, "VARCHAR", parser = parser, .n = .n, db_check = db_check, ...)
 }
 
 DoubleField = function(name, parser = \(x) as.numeric(x[[name]])[1], .n = 2L, ...) {
@@ -115,4 +128,11 @@ timestamps = function() {
   if (is.function(f$update_trigger)) f$updatable = TRUE
   if (!.has_default(f)) f$default = NULL else if (.has_default_val(f)) f$default = \() f$default
   f
+}
+
+.field_decl_sql = function(field) {
+  notnull = if (!field$nullable) " NOT NULL" else ""
+  isunique = if (field$unique) " UNIQUE" else ""
+  dbcheck = if (!is.null(field$db_check)) prepend(field$db_check, " ") else ""
+  glue::glue("{field$name} {field$type}{notnull}{isunique}{dbcheck}")
 }
