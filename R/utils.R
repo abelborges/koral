@@ -1,9 +1,10 @@
-utctime = \() lubridate::now("UTC")
-utcdate = \() lubridate::date(utctime())
-println = \(...) cat(..., "\n")
-printlns = \(...) cat(..., sep = "\n")
+utctime = function() lubridate::now("UTC")
+utcdate = function() lubridate::date(utctime())
+println = function(...) cat(..., "\n")
+printlns = function(...) cat(..., sep = "\n")
 
-prepend = \(x, prefix) paste0(prefix, x)
+prefix_with = function(x, prefix) paste0(prefix, x)
+rm_double_spaces = function(x) gsub("\\s+", " ", trimws(x))
 
 mkstring = function(xs, ...) {
   seps = list(...)
@@ -20,20 +21,22 @@ mkstring = function(xs, ...) {
   stop("Wrong number of arguments")
 }
 
-not = \(x) !x
-not_null = \(x) !is.null(x)
-is_scalar = \(x) is.atomic(x) && length(x) == 1L
-is_non_null_scalar = \(x) if (!is.list(x) || !is.vector(x)) FALSE else !is.null(x) && is_scalar(x)
-is_non_null_string = \(x) is_non_null_scalar(x) && is.character(x)
-pick = \(x, keys) subset(x, names(x) %in% keys)
-add_class = \(x, cls) structure(x, class = cls)
-env_as = \(cls, include_private = FALSE) as.list(parent.frame(), all.names = include_private) |> add_class(cls)
-as_vec = \(x) unlist(x, recursive = TRUE, use.names = FALSE)
-first_scalar = \(x) as_vec(x)[[1]]
+not = function(x) !x
+not_null = function(x) !is.null(x)
+is_scalar = function(x) is.atomic(x) && length(x) == 1L
+is_non_null_scalar = function(x) if (!is.list(x) || !is.vector(x)) FALSE else !is.null(x) && is_scalar(x)
+is_non_null_string = function(x) is_non_null_scalar(x) && is.character(x)
+is_non_null_number = function(x) is_non_null_scalar(x) && is.numeric(x)
+is_positive_number = function(x) is_non_null_number(x) && x > 0
+add_class = function(x, cls) structure(x, class = cls)
+add_attr = function(x, k, v) { attr(x, k) = v; x }
+env_as = function(cls, include_private = FALSE) as.list(parent.frame(), all.names = include_private) |> add_class(cls)
+as_vec = function(x) unlist(x, recursive = TRUE, use.names = FALSE)
+first_scalar = function(x) as_vec(x)[[1]]
 
 assert_class = function(cls, ...) {
   for (x in list(...)) {
-    if (!is(x, cls)) stop(glue::glue("class of {x} is not {cls}"))
+    if (!is(x, cls)) stop(paste("class of", x, "is not", cls))
   }
   return(invisible(TRUE))
 }
@@ -84,6 +87,11 @@ groupby = function(xs, f, ...) {
     m[[k]][[counter[[k]]]] = x
   }
   m
+}
+
+orderby = function(xs, f, ...) {
+  ordered_indices = xs |> map(f) |> unlist() |> order()
+  xs[ordered_indices]
 }
 
 lupsert = function(x, y) {

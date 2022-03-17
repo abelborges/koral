@@ -19,15 +19,15 @@ Field = function(
   f = env_as(.FIELD_DECL) |> .validate_field()
   if (.only_val) return(f)
 
-  entity = parent.frame(.n)
-  entity[[f$name]] = f
+  relation = parent.frame(.n)
+  relation[[f$name]] = f
 }
 
-ForeignKey = function(entity, field = NULL) {
-  assert_class(.ENTITY_DECL, entity)
+ForeignKey = function(relation, field = NULL) {
+  assert_class(.RELATION_DECL, relation)
   if (is.null(field)) {
-    if (.has_composite_pk(entity)) stop("Must specify field name for entities with composite PKs")
-    field = entity |> where("pk") |> map("name") |> first_scalar()
+    if (.has_composite_pk(relation)) stop("Must specify field name for entities with composite PKs")
+    field = relation |> where("pk") |> map("name") |> first_scalar()
   }
   assert_class("character", field)
   env_as(.FK_DECL)
@@ -104,18 +104,19 @@ timestamps = function() {
 
 # private
 
-.FIELD_DECL = "fielddecl"
-.FK_DECL = "foreignkeydecl"
+.FIELD_DECL = "koral_field"
+.FK_DECL = "koral_foreign_key"
 
-.has_default_val  = \(f) is_non_null_scalar(f$default)
-.has_default      = \(f) is.function(f$default) || .has_default_val(f)
-.is_fk            = \(f) is(f$fk, .FK_DECL)
-.is_valid_fk      = \(f) is.null(f$fk) || .is_fk(f)
-.cant_be_null     = \(f) f$pk || .is_fk(f) || f$unique || .has_default(f)
+.has_default      = function(f) is.function(f$default)
+.has_default_val  = function(f) is_non_null_scalar(f$default)
+.valid_default    = function(f) is.function(f$default) || .has_default_val(f)
+.is_fk            = function(f) is(f$fk, .FK_DECL)
+.is_valid_fk      = function(f) is.null(f$fk) || .is_fk(f)
+.cant_be_null     = function(f) f$pk || .is_fk(f) || f$unique || .valid_default(f)
 
-.date_parser      = \(x) lubridate::fast_strptime(x, "%Y-%m-%d", "UTC")
-.timestamp_parser = \(x) lubridate::fast_strptime(x, "%Y-%m-%d %H:%M:%OS", "UTC")
-.is_multi_array   = \(t) is_non_null_string(t) && endsWith(t, "[][]")
+.date_parser      = function(x) lubridate::fast_strptime(x, "%Y-%m-%d", "UTC")
+.timestamp_parser = function(x) lubridate::fast_strptime(x, "%Y-%m-%d %H:%M:%OS", "UTC")
+.is_multi_array   = function(t) is_non_null_string(t) && endsWith(t, "[][]")
 
 .validate_field = function(f) {
   if (is.null(f$name) || is.null(f$type)) stop("Field must have `name` and `type`")
@@ -126,13 +127,14 @@ timestamps = function() {
   if (!.is_valid_fk(f)) stop("Non-null `fk`s should be a ForeingKey() call")
   if (.cant_be_null(f)) f$nullable = FALSE
   if (is.function(f$update_trigger)) f$updatable = TRUE
-  if (!.has_default(f)) f$default = NULL else if (.has_default_val(f)) f$default = \() f$default
+  if (!.valid_default(f)) f$default = NULL else if (.has_default_val(f)) f$default = \() f$default
   f
 }
 
 .field_decl_sql = function(field) {
-  notnull = if (!field$nullable) " NOT NULL" else ""
-  isunique = if (field$unique) " UNIQUE" else ""
-  dbcheck = if (!is.null(field$db_check)) prepend(field$db_check, " ") else ""
-  glue::glue("{field$name} {field$type}{notnull}{isunique}{dbcheck}")
+  notnull = if (!field$nullable) "NOT NULL" else ""
+  isunique = if (field$unique) "UNIQUE" else ""
+  dbcheck = if (!is.null(field$db_check)) field$db_check else ""
+  decl = paste(field$name, field$type, notnull, isunique, dbcheck)
+  rm_double_spaces(decl)
 }
