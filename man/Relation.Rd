@@ -2,10 +2,17 @@
 % Please edit documentation in R/Relation.R
 \name{Relation}
 \alias{Relation}
-\title{Build}
+\title{Declare the model for a relation of items.}
 \usage{
 Relation(decl)
 }
+\arguments{
+\item{decl}{A code block containing a series of \code{koral_field} declarations and
+returning a string representing the table name.}
+}
+\value{
+An \code{koral_relation} object.
+}
 \description{
-Build
+Declare the model for a relation of items.
 }

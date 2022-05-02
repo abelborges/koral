@@ -3,11 +3,17 @@
 \name{create_table}
 \alias{create_table}
 \alias{drop_table}
+\alias{create_tables}
+\alias{show_tables_sql}
 \title{Create a table in the database for the given \code{relation}.}
 \usage{
 create_table(relation, drop_if_exists = FALSE)
 
 drop_table(relation)
+
+create_tables(drop_if_exists = FALSE)
+
+show_tables_sql()
 }
 \arguments{
 \item{relation}{An \code{koral_relation} object.}
@@ -24,4 +30,9 @@ Logical indicating whether the table was dropped.
 Create a table in the database for the given \code{relation}.
 
 Drops the table \code{attr(relation, "table")} in the database.
+
+Create tables for each \code{koral_relation} defined in the current scope.
+
+Show the generated SQL for table creation of all \code{koral_relation} objects in
+the current scope.
 }
