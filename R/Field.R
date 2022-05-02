@@ -1,8 +1,8 @@
 #' Base field declaration constructor
 #'
-#' Use only for non-trivial cases.
+#' Use `Field` directly only for non-trivial cases.
 #' Otherwise, checkout higher-level constructors such as
-#' `UuidPrimaryKey`, `StringField`, `TimestampField` etc.
+#' `UuidPrimaryKey`, `StringField`, `EnumField`, `timestamps` etc.
 #'
 #' @param name Field name.
 #' @param type Field PostgreSQL type.
@@ -35,6 +35,7 @@
 #'           in the caller environment.
 #'
 #' @return A `koral_field` object.
+#' @rdname field
 #' @export
 Field = function(
   name = NULL,
@@ -61,6 +62,11 @@ Field = function(
   relation[[f$name]] = f
 }
 
+#' Reference a field from another table.
+#'
+#' @param relation An `koral_relation` object.
+#' @param field The name of the referenced field. Required in case `relation` has a
+#'              composite key. If `NULL`, defined as the PK at `relation`.
 ForeignKey = function(relation, field = NULL) {
   assert_class(.RELATION_DECL, relation)
   if (is.null(field)) {
@@ -71,14 +77,20 @@ ForeignKey = function(relation, field = NULL) {
   env_as(.FK_DECL)
 }
 
+#' @rdname field
+#' @export
 StringField = function(name, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
   Field(name, "VARCHAR", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 StringArrayField = function(name, parser = \(x) as.character(x[[name]]), .n = 2L, ...) {
   Field(name, "VARCHAR[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 EnumField = function(name, values, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
   assert_class("character", values)
   if (length(values) == 0L) stop("Empty enum `values`")
@@ -87,54 +99,80 @@ EnumField = function(name, values, parser = \(x) as.character(x[[name]])[1], .n 
   Field(name, "VARCHAR", parser = parser, .n = .n, db_check = db_check, ...)
 }
 
+#' @rdname field
+#' @export
 DoubleField = function(name, parser = \(x) as.numeric(x[[name]])[1], .n = 2L, ...) {
   Field(name, "DOUBLE PRECISION", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 DoubleArrayField = function(name, parser = \(x) as.numeric(x[[name]]), .n = 2L, ...) {
   Field(name, "DOUBLE PRECISION[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 IntegerField = function(name, parser = \(x) as.integer(x[[name]])[1], .n = 2L, ...) {
   Field(name, "INTEGER", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 IntegerArrayField = function(name, parser = \(x) as.integer(x[[name]]), .n = 2L, ...) {
   Field(name, "INTEGER[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 BigIntField = function(name, parser = \(x) bit64::as.integer64(x[[name]])[1], .n = 2L, ...) {
   Field(name, "BIGINT", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 BigIntArrayField = function(name, parser = \(x) bit64::as.integer64(x[[name]]), .n = 2L, ...) {
   Field(name, "BIGINT[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 DateField = function(name, parser = \(x) .date_parser(as.character(x[[name]]))[1], .n = 2L, ...) {
   Field(name, "DATE", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 DateArrayField = function(name, parser = \(x) .date_parser(as.character(x[[name]])), .n = 2L, ...) {
   Field(name, "DATE[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 TimestampField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]]))[1], .n = 2L, ...) {
   Field(name, "TIMESTAMP", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 TimestampArrayField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]])), .n = 2L, ...) {
   Field(name, "TIMESTAMP[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 UuidField = function(name, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
   Field(name, "UUID", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 UuidPrimaryKey = function(name, ...) {
   UuidField(name, pk = TRUE, default = uuid::UUIDgenerate, .n = 3L, ...)
 }
 
+#' @rdname field
+#' @export
 timestamps = function() {
   TimestampField("created_at", default = utctime, updatable = FALSE, .n = 3L)
   TimestampField("updated_at", default = utctime, update_trigger = utctime, .n = 3L)

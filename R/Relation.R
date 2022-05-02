@@ -1,17 +1,11 @@
+#' Declare the model for a relation of items.
+#'
+#' @param decl A code block containing a series of `koral_field` declarations and
+#'             returning a string representing the table name.
+#'
+#' @return An `koral_relation` object.
+#' @export
 Relation = function(decl) .Relation(substitute(decl))
-
-table_schema = function(relation) {
-  conn = .get_conn(); on.exit(DBI::dbDisconnect(conn))
-  DBI::dbGetQuery(conn, paste("\\d", attr(relation, "table")))
-}
-
-show_tables_sql = function() {
-  for (relation in .all_relations(2)) cat(.create_table_sql(relation), "\n")
-}
-
-create_tables = function(drop_if_exists = FALSE) {
-  for (relation in .all_relations(2)) create_table(relation, drop_if_exists)
-}
 
 # private
 
@@ -53,6 +47,10 @@ create_tables = function(drop_if_exists = FALSE) {
 
 .create_table_sql = function(relation) {
   assert_class(.RELATION_DECL, relation)
-  fields = relation |> .db_fields() |> map(.field_decl_sql) |> map(prefix_with, "\t") |> mkstring(",\n")
+  fields = relation |>
+    .db_fields() |>
+    map(.field_decl_sql) |>
+    map(prefix_with, "\t") |>
+    mkstring(",\n")
   sprintf("CREATE TABLE %s (\n%s,\n%s\n);", attr(relation, "table"), fields, .constraints_sql(relation))
 }

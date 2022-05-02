@@ -1,7 +1,5 @@
 utctime = function() lubridate::now("UTC")
 utcdate = function() lubridate::date(utctime())
-println = function(...) cat(..., "\n")
-printlns = function(...) cat(..., sep = "\n")
 
 prefix_with = function(x, prefix) paste0(prefix, x)
 rm_double_spaces = function(x) gsub("\\s+", " ", trimws(x))

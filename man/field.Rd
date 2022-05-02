@@ -2,6 +2,22 @@
 % Please edit documentation in R/Field.R
 \name{Field}
 \alias{Field}
+\alias{StringField}
+\alias{StringArrayField}
+\alias{EnumField}
+\alias{DoubleField}
+\alias{DoubleArrayField}
+\alias{IntegerField}
+\alias{IntegerArrayField}
+\alias{BigIntField}
+\alias{BigIntArrayField}
+\alias{DateField}
+\alias{DateArrayField}
+\alias{TimestampField}
+\alias{TimestampArrayField}
+\alias{UuidField}
+\alias{UuidPrimaryKey}
+\alias{timestamps}
 \title{Base field declaration constructor}
 \usage{
 Field(
@@ -22,6 +38,94 @@ Field(
   .only_val = FALSE,
   .n = 1L
 )
+
+StringField(
+  name,
+  parser = function(x) as.character(x[[name]])[1],
+  .n = 2L,
+  ...
+)
+
+StringArrayField(
+  name,
+  parser = function(x) as.character(x[[name]]),
+  .n = 2L,
+  ...
+)
+
+EnumField(
+  name,
+  values,
+  parser = function(x) as.character(x[[name]])[1],
+  .n = 2L,
+  ...
+)
+
+DoubleField(name, parser = function(x) as.numeric(x[[name]])[1], .n = 2L, ...)
+
+DoubleArrayField(
+  name,
+  parser = function(x) as.numeric(x[[name]]),
+  .n = 2L,
+  ...
+)
+
+IntegerField(name, parser = function(x) as.integer(x[[name]])[1], .n = 2L, ...)
+
+IntegerArrayField(
+  name,
+  parser = function(x) as.integer(x[[name]]),
+  .n = 2L,
+  ...
+)
+
+BigIntField(
+  name,
+  parser = function(x) bit64::as.integer64(x[[name]])[1],
+  .n = 2L,
+  ...
+)
+
+BigIntArrayField(
+  name,
+  parser = function(x) bit64::as.integer64(x[[name]]),
+  .n = 2L,
+  ...
+)
+
+DateField(
+  name,
+  parser = function(x) .date_parser(as.character(x[[name]]))[1],
+  .n = 2L,
+  ...
+)
+
+DateArrayField(
+  name,
+  parser = function(x) .date_parser(as.character(x[[name]])),
+  .n = 2L,
+  ...
+)
+
+TimestampField(
+  name,
+  parser = function(x) .timestamp_parser(as.character(x[[name]]))[1],
+  .n = 2L,
+  ...
+)
+
+TimestampArrayField(
+  name,
+  parser = function(x) .timestamp_parser(as.character(x[[name]])),
+  .n = 2L,
+  ...
+)
+
+UuidField(name, parser = function(x) as.character(x[[name]])[1], .n = 2L, ...)
+
+UuidPrimaryKey(name, ...)
+
+timestamps()
 }
 \arguments{
 \item{name}{Field name.}
@@ -73,7 +177,7 @@ in the caller environment.}
 A \code{koral_field} object.
 }
 \description{
-Use only for non-trivial cases.
+Use \code{Field} directly only for non-trivial cases.
 Otherwise, checkout higher-level constructors such as
-\code{UuidPrimaryKey}, \code{StringField}, \code{TimestampField} etc.
+\code{UuidPrimaryKey}, \code{StringField}, \code{EnumField}, \code{timestamps} etc.
 }
