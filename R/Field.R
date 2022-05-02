@@ -1,3 +1,42 @@
+#' Base field declaration constructor
+#'
+#' Use `Field` directly only for non-trivial cases.
+#' Otherwise, checkout higher-level constructors such as
+#' `UuidPrimaryKey`, `StringField`, `EnumField`, `timestamps` etc.
+#'
+#' @param name Field name.
+#' @param type Field PostgreSQL type.
+#' @param pk Logical. Is it part of the relation's Primary Key?
+#' @param fk Set to a `ForeignKey`-returned object in case the field is constrained to
+#'           the values of a field in another relation.
+#' @param default Fill with either a function or a value to be used in `INSERT` queries
+#'                in case input data skips this field.
+#' @param nullable Logical. Is it allowed to be null?
+#' @param unique Logical. Should there be a 1:1 mapping between the field and the PK?
+#' @param transient Logical. Is it saved to the database? E.g., you probably want to
+#'                  declare raw password fields with `transient = TRUE`, so that they
+#'                  are encrypted before being persisted.
+#' @param updatable Logical. Is it allowed to be updated after record creation?
+#' @param update_trigger Fill with a 0-parameter function whose return value is used
+#'                       to update the field during `UPDATE` queries.
+#' @param parser Function of a named list representing a record whose return value is
+#'               the parsed field value. This is called whenever `{koral}` is about to
+#'               commit a write (insert or update) to the database.
+#' @param db_parser Function of the field's name used to wrap the field's value in a
+#'                  database function during writes.
+#' @param db_check Optional string with PostgreSQL `CHECK` constraint expression. E.g.
+#'                 `Field("positive", "NUMERIC", db_check = "CHECK (positive > 0)")`.
+#' @param deduced Logical. Is it deduced from other fields (by `parser`)? For instance,
+#'                `Field("hashed_x", "TEXT", deduced = TRUE, parser = \(dto) hash(dto$x))`.
+#' @param .only_val Logical. Should it return the created field object? Default is `FALSE`
+#'                  since this is meant to be called in as part of a `Relation` declaration.
+#' @param .n When `.only_val = FALSE` (the default), an object named `name` is declared `.n`
+#'           environments above. Defaults to `.n = 1`, which means such object is declared
+#'           in the caller environment.
+#'
+#' @return A `koral_field` object.
+#' @rdname field
+#' @export
 Field = function(
   name = NULL,
   type = NULL,
@@ -23,6 +62,11 @@ Field = function(
   relation[[f$name]] = f
 }
 
+#' Reference a field from another table.
+#'
+#' @param relation An `koral_relation` object.
+#' @param field The name of the referenced field. Required in case `relation` has a
+#'              composite key. If `NULL`, defined as the PK at `relation`.
 ForeignKey = function(relation, field = NULL) {
   assert_class(.RELATION_DECL, relation)
   if (is.null(field)) {
@@ -33,14 +77,20 @@ ForeignKey = function(relation, field = NULL) {
   env_as(.FK_DECL)
 }
 
+#' @rdname field
+#' @export
 StringField = function(name, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
   Field(name, "VARCHAR", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 StringArrayField = function(name, parser = \(x) as.character(x[[name]]), .n = 2L, ...) {
   Field(name, "VARCHAR[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 EnumField = function(name, values, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
   assert_class("character", values)
   if (length(values) == 0L) stop("Empty enum `values`")
@@ -49,54 +99,80 @@ EnumField = function(name, values, parser = \(x) as.character(x[[name]])[1], .n 
   Field(name, "VARCHAR", parser = parser, .n = .n, db_check = db_check, ...)
 }
 
+#' @rdname field
+#' @export
 DoubleField = function(name, parser = \(x) as.numeric(x[[name]])[1], .n = 2L, ...) {
   Field(name, "DOUBLE PRECISION", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 DoubleArrayField = function(name, parser = \(x) as.numeric(x[[name]]), .n = 2L, ...) {
   Field(name, "DOUBLE PRECISION[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 IntegerField = function(name, parser = \(x) as.integer(x[[name]])[1], .n = 2L, ...) {
   Field(name, "INTEGER", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 IntegerArrayField = function(name, parser = \(x) as.integer(x[[name]]), .n = 2L, ...) {
   Field(name, "INTEGER[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 BigIntField = function(name, parser = \(x) bit64::as.integer64(x[[name]])[1], .n = 2L, ...) {
   Field(name, "BIGINT", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 BigIntArrayField = function(name, parser = \(x) bit64::as.integer64(x[[name]]), .n = 2L, ...) {
   Field(name, "BIGINT[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 DateField = function(name, parser = \(x) .date_parser(as.character(x[[name]]))[1], .n = 2L, ...) {
   Field(name, "DATE", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 DateArrayField = function(name, parser = \(x) .date_parser(as.character(x[[name]])), .n = 2L, ...) {
   Field(name, "DATE[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 TimestampField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]]))[1], .n = 2L, ...) {
   Field(name, "TIMESTAMP", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 TimestampArrayField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]])), .n = 2L, ...) {
   Field(name, "TIMESTAMP[]", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 UuidField = function(name, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
   Field(name, "UUID", parser = parser, .n = .n, ...)
 }
 
+#' @rdname field
+#' @export
 UuidPrimaryKey = function(name, ...) {
   UuidField(name, pk = TRUE, default = uuid::UUIDgenerate, .n = 3L, ...)
 }
 
+#' @rdname field
+#' @export
 timestamps = function() {
   TimestampField("created_at", default = utctime, updatable = FALSE, .n = 3L)
   TimestampField("updated_at", default = utctime, update_trigger = utctime, .n = 3L)

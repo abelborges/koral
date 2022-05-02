@@ -1,3 +1,13 @@
+#' Create a table in the database for the given `relation`.
+#'
+#' @param relation An `koral_relation` object.
+#' @param drop_if_exists Logical. If `TRUE`, drops the table with the same name (in case
+#'                       it exists) before creating the given one.
+#'
+#' @return Logical indicating whether the table was created.
+#'
+#' @rdname migrations
+#' @export
 create_table = function(relation, drop_if_exists = FALSE) {
   assert_class(.RELATION_DECL, relation)
   conn = .get_conn(); on.exit(DBI::dbDisconnect(conn))
@@ -12,8 +22,17 @@ create_table = function(relation, drop_if_exists = FALSE) {
   }
 
   DBI::dbExecute(conn, .create_table_sql(relation))
+  TRUE
 }
 
+#' Drops the table `attr(relation, "table")` in the database.
+#'
+#' @param relation An `koral_relation` object.
+#'
+#' @return Logical indicating whether the table was dropped.
+#'
+#' @rdname migrations
+#' @export
 drop_table = function(relation) {
   assert_class(.RELATION_DECL, relation)
   conn = .get_conn(); on.exit(DBI::dbDisconnect(conn))
@@ -21,12 +40,40 @@ drop_table = function(relation) {
 
   if (!DBI::dbExistsTable(conn, table)) {
     cat("Table does not exist.\n")
-    return(invisible(NULL))
+    return(FALSE)
   }
 
   DBI::dbRemoveTable(conn, table)
+  TRUE
 }
 
+#' Create tables for each `koral_relation` defined in the current scope.
+#'
+#' @inheritParams create_table
+#'
+#' @rdname migrations
+#' @export
+create_tables = function(drop_if_exists = FALSE) {
+  for (relation in .all_relations(2)) create_table(relation, drop_if_exists)
+}
+
+#' Show the generated SQL for table creation of all `koral_relation` objects in
+#' the current scope.
+#'
+#' @rdname migrations
+#' @export
+show_tables_sql = function() {
+  for (relation in .all_relations(2)) cat(.create_table_sql(relation), "\n")
+}
+
+#' Insert an object into a table.
+#'
+#' @param relation An `koral_relation` object.
+#' @param x A `list` representing the record to be parsed and saved.
+#'
+#' @return A `list` representing the saved record, including its generated fields.
+#'
+#' @export
 insert = function(relation, x) {
   assert_class(.RELATION_DECL, relation)
   conn = .get_conn(); on.exit(DBI::dbDisconnect(conn))
@@ -42,6 +89,15 @@ insert = function(relation, x) {
   .get_records(conn, DBI::sqlInterpolate(conn, query, .dots = x))[[1]]
 }
 
+#' Get all records from a given relation.
+#'
+#' @param relation An `koral_relation` object.
+#' @param ... Key-value pairs representing filters applied to the table.
+#' @param .limit Integer. If not `NULL`, includes a `LIMIT` clause.
+#'
+#' @return List of lists: inner lists contain the retrieved records.
+#'
+#' @export
 get_all = function(relation, ..., .limit = NULL) {
   conn = .get_conn(); on.exit(DBI::dbDisconnect(conn))
   select_star = paste("SELECT * FROM", attr(relation, "table"))
@@ -53,6 +109,12 @@ get_all = function(relation, ..., .limit = NULL) {
   .get_records(conn, query |> rm_double_spaces() |> paste0(";"))
 }
 
+#' Get a single record satisfying
+#'
+#' @inheritParams
+#' @inheritDotParams
+#'
+#' @return A `list` representing the record.
 get_one = function(relation, ...) {
   maybe_record = get_all(relation, ..., .limit = 1)
   if (length(maybe_record) == 0) return(NULL)
