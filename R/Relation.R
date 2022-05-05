@@ -1,32 +1,25 @@
 #' Declare the model for a relation of items.
 #'
-#' @param decl A code block containing a series of `koral_field` declarations and
-#'             returning a string representing the table name.
+#' @param table The name of the table.
+#' @param ... Sequence of `koral_field` declarations (or lists of those, to be unnested).
 #'
-#' @return An `koral_relation` object.
+#' @return An `koral_relation` object. It's a named list of `koral_field`s with an
+#'         `"table"` attribute.
 #' @export
-Relation = function(decl) .Relation(substitute(decl))
+Relation = function(table, ...) {
+  fields = flatten(list(...), where = is, .FIELD_DECL)
+  names  = map(fields, "name")
 
-# private
-
-.RELATION_DECL = "koral_relation"
-.KORAL_DBARGS = "koral_dbargs"
-.BCRYPT_SALT_ROUNDS = 10
-
-.Relation = function(decl_code) {
-  relation = new.env()
-  table = local(eval(decl_code), relation)
-
-  relation |>
-    as.list() |>
-    where(is, .FIELD_DECL) |>
+  fields |>
+    setNames(names) |>
     orderby("deduced") |>
     add_class(.RELATION_DECL) |>
     add_attr("table", table)
 }
 
+# private
+
 .all_relations    = function(n = 1) parent.frame(n) |> as.list() |> where(is, .RELATION_DECL)
-.has_no_pk        = function(relation) relation |> map("pk") |> not() |> all()
 .has_composite_pk = function(relation) count(relation, `$`, "pk") > 1
 .has_fk           = function(relation) relation |> map(.is_fk) |> as_vec() |> any()
 

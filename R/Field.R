@@ -28,11 +28,6 @@
 #'                 `Field("positive", "NUMERIC", db_check = "CHECK (positive > 0)")`.
 #' @param deduced Logical. Is it deduced from other fields (by `parser`)? For instance,
 #'                `Field("hashed_x", "TEXT", deduced = TRUE, parser = \(dto) hash(dto$x))`.
-#' @param .only_val Logical. Should it return the created field object? Default is `FALSE`
-#'                  since this is meant to be called in as part of a `Relation` declaration.
-#' @param .n When `.only_val = FALSE` (the default), an object named `name` is declared `.n`
-#'           environments above. Defaults to `.n = 1`, which means such object is declared
-#'           in the caller environment.
 #'
 #' @return A `koral_field` object.
 #' @rdname field
@@ -42,7 +37,7 @@ Field = function(
   type = NULL,
   pk = FALSE,
   fk = NULL,
-  default = NULL,
+  default = \() NULL,
   nullable = FALSE,
   unique = FALSE,
   transient = FALSE,
@@ -51,16 +46,8 @@ Field = function(
   parser = NULL,
   db_parser = identity,
   db_check = NULL,
-  deduced = FALSE,
-  .only_val = FALSE,
-  .n = 1L
-) {
-  f = env_as(.FIELD_DECL) |> .validate_field()
-  if (.only_val) return(f)
-
-  relation = parent.frame(.n)
-  relation[[f$name]] = f
-}
+  deduced = FALSE
+) env_as(.FIELD_DECL) |> .validate_field()
 
 #' Reference a field from another table.
 #'
@@ -79,112 +66,108 @@ ForeignKey = function(relation, field = NULL) {
 
 #' @rdname field
 #' @export
-StringField = function(name, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
-  Field(name, "VARCHAR", parser = parser, .n = .n, ...)
+StringField = function(name, parser = \(x) as.character(x[[name]])[1], ...) {
+  Field(name, "VARCHAR", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-StringArrayField = function(name, parser = \(x) as.character(x[[name]]), .n = 2L, ...) {
-  Field(name, "VARCHAR[]", parser = parser, .n = .n, ...)
+StringArrayField = function(name, parser = \(x) as.character(x[[name]]), ...) {
+  Field(name, "VARCHAR[]", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-EnumField = function(name, values, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
+EnumField = function(name, values, parser = \(x) as.character(x[[name]])[1], ...) {
   assert_class("character", values)
   if (length(values) == 0L) stop("Empty enum `values`")
   if (length(values) == 1L) warning("Declaring enum field with a single value")
   db_check = sprintf("CHECK (%s IN %s)", name, .as_sql_list(values))
-  Field(name, "VARCHAR", parser = parser, .n = .n, db_check = db_check, ...)
+  Field(name, "VARCHAR", parser = parser, db_check = db_check, ...)
 }
 
 #' @rdname field
 #' @export
-DoubleField = function(name, parser = \(x) as.numeric(x[[name]])[1], .n = 2L, ...) {
-  Field(name, "DOUBLE PRECISION", parser = parser, .n = .n, ...)
+DoubleField = function(name, parser = \(x) as.numeric(x[[name]])[1], ...) {
+  Field(name, "DOUBLE PRECISION", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-DoubleArrayField = function(name, parser = \(x) as.numeric(x[[name]]), .n = 2L, ...) {
-  Field(name, "DOUBLE PRECISION[]", parser = parser, .n = .n, ...)
+DoubleArrayField = function(name, parser = \(x) as.numeric(x[[name]]), ...) {
+  Field(name, "DOUBLE PRECISION[]", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-IntegerField = function(name, parser = \(x) as.integer(x[[name]])[1], .n = 2L, ...) {
-  Field(name, "INTEGER", parser = parser, .n = .n, ...)
+IntegerField = function(name, parser = \(x) as.integer(x[[name]])[1], ...) {
+  Field(name, "INTEGER", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-IntegerArrayField = function(name, parser = \(x) as.integer(x[[name]]), .n = 2L, ...) {
-  Field(name, "INTEGER[]", parser = parser, .n = .n, ...)
+IntegerArrayField = function(name, parser = \(x) as.integer(x[[name]]), ...) {
+  Field(name, "INTEGER[]", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-BigIntField = function(name, parser = \(x) bit64::as.integer64(x[[name]])[1], .n = 2L, ...) {
-  Field(name, "BIGINT", parser = parser, .n = .n, ...)
+BigIntField = function(name, parser = \(x) bit64::as.integer64(x[[name]])[1], ...) {
+  Field(name, "BIGINT", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-BigIntArrayField = function(name, parser = \(x) bit64::as.integer64(x[[name]]), .n = 2L, ...) {
-  Field(name, "BIGINT[]", parser = parser, .n = .n, ...)
+BigIntArrayField = function(name, parser = \(x) bit64::as.integer64(x[[name]]), ...) {
+  Field(name, "BIGINT[]", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-DateField = function(name, parser = \(x) .date_parser(as.character(x[[name]]))[1], .n = 2L, ...) {
-  Field(name, "DATE", parser = parser, .n = .n, ...)
+DateField = function(name, parser = \(x) .date_parser(as.character(x[[name]]))[1], ...) {
+  Field(name, "DATE", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-DateArrayField = function(name, parser = \(x) .date_parser(as.character(x[[name]])), .n = 2L, ...) {
-  Field(name, "DATE[]", parser = parser, .n = .n, ...)
+DateArrayField = function(name, parser = \(x) .date_parser(as.character(x[[name]])), ...) {
+  Field(name, "DATE[]", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-TimestampField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]]))[1], .n = 2L, ...) {
-  Field(name, "TIMESTAMP", parser = parser, .n = .n, ...)
+TimestampField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]]))[1], ...) {
+  Field(name, "TIMESTAMP", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-TimestampArrayField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]])), .n = 2L, ...) {
-  Field(name, "TIMESTAMP[]", parser = parser, .n = .n, ...)
+TimestampArrayField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]])), ...) {
+  Field(name, "TIMESTAMP[]", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-UuidField = function(name, parser = \(x) as.character(x[[name]])[1], .n = 2L, ...) {
-  Field(name, "UUID", parser = parser, .n = .n, ...)
+UuidField = function(name, parser = \(x) as.character(x[[name]])[1], ...) {
+  Field(name, "UUID", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
 UuidPrimaryKey = function(name, ...) {
-  UuidField(name, pk = TRUE, default = uuid::UUIDgenerate, .n = 3L, ...)
+  UuidField(name, pk = TRUE, default = uuid::UUIDgenerate, ...)
 }
 
 #' @rdname field
 #' @export
-timestamps = function() {
-  TimestampField("created_at", default = utctime, updatable = FALSE, .n = 3L)
-  TimestampField("updated_at", default = utctime, update_trigger = utctime, .n = 3L)
-}
+timestamps = function() list(
+  TimestampField("created_at", default = utctime, updatable = FALSE),
+  TimestampField("updated_at", default = utctime, update_trigger = utctime)
+)
 
 # private
 
-.FIELD_DECL = "koral_field"
-.FK_DECL = "koral_foreign_key"
-
-.has_default      = function(f) is.function(f$default)
-.has_default_val  = function(f) is_non_null_scalar(f$default)
+.has_default_val  = function(f) is.atomic(f$default) && !is.null(f$default)
 .valid_default    = function(f) is.function(f$default) || .has_default_val(f)
 .is_fk            = function(f) is(f$fk, .FK_DECL)
 .is_valid_fk      = function(f) is.null(f$fk) || .is_fk(f)
@@ -203,7 +186,8 @@ timestamps = function() {
   if (!.is_valid_fk(f)) stop("Non-null `fk`s should be a ForeingKey() call")
   if (.cant_be_null(f)) f$nullable = FALSE
   if (is.function(f$update_trigger)) f$updatable = TRUE
-  if (!.valid_default(f)) f$default = NULL else if (.has_default_val(f)) f$default = \() f$default
+  if (!.valid_default(f)) f$default = \() NULL else if (.has_default_val(f)) f$default = \() f$default
+
   f
 }
 

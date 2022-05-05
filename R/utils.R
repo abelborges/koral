@@ -31,6 +31,7 @@ add_attr = function(x, k, v) { attr(x, k) = v; x }
 env_as = function(cls, include_private = FALSE) as.list(parent.frame(), all.names = include_private) |> add_class(cls)
 as_vec = function(x) unlist(x, recursive = TRUE, use.names = FALSE)
 first_scalar = function(x) as_vec(x)[[1]]
+is_map = function(x) is.list(x) && !is.null(names(x))
 
 assert_class = function(cls, ...) {
   for (x in list(...)) {
@@ -98,6 +99,41 @@ lupsert = function(x, y) {
   z = x
   for (key in names(y)) z[[key]] = y[[key]]
   z
+}
+
+concat_unnamed_lists = function(x, y) {
+  z = x
+  counter = length(z)
+  for (o in y) {
+    counter = counter + 1
+    z[[counter]] = o
+  }
+  z
+}
+
+#' given a list of lists (ignores non-lists), if one of them is not a map (i.e. has no
+#' names) recursively unnests looking for maps to add into the returned list
+flatten = function(input, where = is_map, ...) {
+  predicate = \(x) where(x, ...)
+
+  output = list()
+  counter = 0
+
+  for (i in seq_along(input)) {
+    x = input[[i]]
+
+    if (predicate(x)) {
+      counter = counter + 1
+      output[[counter]] = x
+      next
+    }
+
+    if (!is.list(x)) next
+
+    output = concat_unnamed_lists(output, flatten(x, predicate))
+  }
+
+  output
 }
 
 count = function(x, predicate, ...) {
