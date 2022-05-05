@@ -25,7 +25,7 @@ Field(
   type = NULL,
   pk = FALSE,
   fk = NULL,
-  default = NULL,
+  default = function() NULL,
   nullable = FALSE,
   unique = FALSE,
   transient = FALSE,
@@ -34,94 +34,56 @@ Field(
   parser = NULL,
   db_parser = identity,
   db_check = NULL,
-  deduced = FALSE,
-  .only_val = FALSE,
-  .n = 1L
+  deduced = FALSE
 )
 
-StringField(
-  name,
-  parser = function(x) as.character(x[[name]])[1],
-  .n = 2L,
-  ...
-)
+StringField(name, parser = function(x) as.character(x[[name]])[1], ...)
 
-StringArrayField(
-  name,
-  parser = function(x) as.character(x[[name]]),
-  .n = 2L,
-  ...
-)
+StringArrayField(name, parser = function(x) as.character(x[[name]]), ...)
 
-EnumField(
-  name,
-  values,
-  parser = function(x) as.character(x[[name]])[1],
-  .n = 2L,
-  ...
-)
+EnumField(name, values, parser = function(x) as.character(x[[name]])[1], ...)
 
-DoubleField(name, parser = function(x) as.numeric(x[[name]])[1], .n = 2L, ...)
+DoubleField(name, parser = function(x) as.numeric(x[[name]])[1], ...)
 
-DoubleArrayField(
-  name,
-  parser = function(x) as.numeric(x[[name]]),
-  .n = 2L,
-  ...
-)
+DoubleArrayField(name, parser = function(x) as.numeric(x[[name]]), ...)
 
-IntegerField(name, parser = function(x) as.integer(x[[name]])[1], .n = 2L, ...)
+IntegerField(name, parser = function(x) as.integer(x[[name]])[1], ...)
 
-IntegerArrayField(
-  name,
-  parser = function(x) as.integer(x[[name]]),
-  .n = 2L,
-  ...
-)
+IntegerArrayField(name, parser = function(x) as.integer(x[[name]]), ...)
 
-BigIntField(
-  name,
-  parser = function(x) bit64::as.integer64(x[[name]])[1],
-  .n = 2L,
-  ...
-)
+BigIntField(name, parser = function(x) bit64::as.integer64(x[[name]])[1], ...)
 
 BigIntArrayField(
   name,
   parser = function(x) bit64::as.integer64(x[[name]]),
-  .n = 2L,
   ...
 )
 
 DateField(
   name,
   parser = function(x) .date_parser(as.character(x[[name]]))[1],
-  .n = 2L,
   ...
 )
 
 DateArrayField(
   name,
   parser = function(x) .date_parser(as.character(x[[name]])),
-  .n = 2L,
   ...
 )
 
 TimestampField(
   name,
   parser = function(x) .timestamp_parser(as.character(x[[name]]))[1],
-  .n = 2L,
   ...
 )
 
 TimestampArrayField(
   name,
   parser = function(x) .timestamp_parser(as.character(x[[name]])),
-  .n = 2L,
   ...
 )
 
-UuidField(name, parser = function(x) as.character(x[[name]])[1], .n = 2L, ...)
+UuidField(name, parser = function(x) as.character(x[[name]])[1], ...)
 
 UuidPrimaryKey(name, ...)
 
@@ -165,13 +127,6 @@ database function during writes.}
 
 \item{deduced}{Logical. Is it deduced from other fields (by \code{parser})? For instance,
 \verb{Field("hashed_x", "TEXT", deduced = TRUE, parser = \\(dto) hash(dto$x))}.}
-
-\item{.only_val}{Logical. Should it return the created field object? Default is \code{FALSE}
-since this is meant to be called in as part of a \code{Relation} declaration.}
-
-\item{.n}{When \code{.only_val = FALSE} (the default), an object named \code{name} is declared \code{.n}
-environments above. Defaults to \code{.n = 1}, which means such object is declared
-in the caller environment.}
 }
 \value{
 A \code{koral_field} object.

@@ -2,7 +2,7 @@
 % Please edit documentation in R/sql-ops.R
 \name{get_one}
 \alias{get_one}
-\title{Get a single record satisfying}
+\title{Get a single record satisfying key-value filters in the dots.}
 \usage{
 get_one(relation, ...)
 }
@@ -10,5 +10,5 @@ get_one(relation, ...)
 A \code{list} representing the record.
 }
 \description{
-Get a single record satisfying
+Get a single record satisfying key-value filters in the dots.
 }

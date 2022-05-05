@@ -111,8 +111,8 @@ concat_unnamed_lists = function(x, y) {
   z
 }
 
-#' given a list of lists (ignores non-lists), if one of them is not a map (i.e. has no
-#' names) recursively unnests looking for maps to add into the returned list
+# given a list of lists (ignores non-lists), if one of them is not a map (i.e. has no
+# names) recursively unnests looking for maps to add into the returned list
 flatten = function(input, where = is_map, ...) {
   predicate = \(x) where(x, ...)
 

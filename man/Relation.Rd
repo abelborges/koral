@@ -4,14 +4,16 @@
 \alias{Relation}
 \title{Declare the model for a relation of items.}
 \usage{
-Relation(decl)
+Relation(table, ...)
 }
 \arguments{
-\item{decl}{A code block containing a series of \code{koral_field} declarations and
-returning a string representing the table name.}
+\item{table}{The name of the table.}
+
+\item{...}{Sequence of \code{koral_field} declarations (or lists of those, to be unnested).}
 }
 \value{
-An \code{koral_relation} object.
+An \code{koral_relation} object. It's a named list of \code{koral_field}s with an
+\code{"table"} attribute.
 }
 \description{
 Declare the model for a relation of items.
