@@ -75,17 +75,17 @@ show_tables_sql = function() {
 #'
 #' @export
 insert = function(relation, x) {
-  assert_class(.RELATION_DECL, relation)
   conn = .get_conn(); on.exit(DBI::dbDisconnect(conn))
-
   x = .from_input(relation, x)
   fields = names(x)
+
   query = sprintf(
     "INSERT INTO %s (%s) VALUES (%s) RETURNING *;",
     attr(relation, "table"),
-    fields |> mkstring(", "),
+    mkstring(fields, ", "),
     map(fields, \(f) relation[[f]]$db_parser(.sql_interpolator(f))) |> mkstring(", ")
   )
+
   .get_records(conn, DBI::sqlInterpolate(conn, query, .dots = x))[[1]]
 }
 
@@ -109,7 +109,7 @@ get_all = function(relation, ..., .limit = NULL) {
   .get_records(conn, query |> rm_double_spaces() |> paste0(";"))
 }
 
-#' Get a single record satisfying
+#' Get a single record satisfying key-value filters in the dots.
 #'
 #' @inheritParams
 #' @inheritDotParams
@@ -172,8 +172,9 @@ get_one = function(relation, ...) {
       next
     }
 
-    if (.has_default(field)) {
-      output[[k]] = field$default()
+    default = field$default()
+    if (!is.null(default)) {
+      output[[k]] = default
       next
     }
 
