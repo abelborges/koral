@@ -3,18 +3,12 @@
 \name{Field}
 \alias{Field}
 \alias{StringField}
-\alias{StringArrayField}
 \alias{EnumField}
 \alias{DoubleField}
-\alias{DoubleArrayField}
 \alias{IntegerField}
-\alias{IntegerArrayField}
 \alias{BigIntField}
-\alias{BigIntArrayField}
 \alias{DateField}
-\alias{DateArrayField}
 \alias{TimestampField}
-\alias{TimestampArrayField}
 \alias{UuidField}
 \alias{UuidPrimaryKey}
 \alias{timestamps}
@@ -23,6 +17,7 @@
 Field(
   name = NULL,
   type = NULL,
+  many = FALSE,
   pk = FALSE,
   fk = NULL,
   default = function() NULL,
@@ -39,25 +34,13 @@ Field(
 
 StringField(name, parser = function(x) as.character(x[[name]])[1], ...)
 
-StringArrayField(name, parser = function(x) as.character(x[[name]]), ...)
-
 EnumField(name, values, parser = function(x) as.character(x[[name]])[1], ...)
 
 DoubleField(name, parser = function(x) as.numeric(x[[name]])[1], ...)
 
-DoubleArrayField(name, parser = function(x) as.numeric(x[[name]]), ...)
-
 IntegerField(name, parser = function(x) as.integer(x[[name]])[1], ...)
 
-IntegerArrayField(name, parser = function(x) as.integer(x[[name]]), ...)
-
 BigIntField(name, parser = function(x) bit64::as.integer64(x[[name]])[1], ...)
-
-BigIntArrayField(
-  name,
-  parser = function(x) bit64::as.integer64(x[[name]]),
-  ...
-)
 
 DateField(
   name,
@@ -65,21 +48,9 @@ DateField(
   ...
 )
 
-DateArrayField(
-  name,
-  parser = function(x) .date_parser(as.character(x[[name]])),
-  ...
-)
-
 TimestampField(
   name,
   parser = function(x) .timestamp_parser(as.character(x[[name]]))[1],
-  ...
-)
-
-TimestampArrayField(
-  name,
-  parser = function(x) .timestamp_parser(as.character(x[[name]])),
   ...
 )
 
@@ -93,6 +64,9 @@ timestamps()
 \item{name}{Field name.}
 
 \item{type}{Field PostgreSQL type.}
+
+\item{many}{If \code{TRUE}, field is modeled as an array of values of type \code{type}.
+Defaults to \code{FALSE}.}
 
 \item{pk}{Logical. Is it part of the relation's Primary Key?}
 

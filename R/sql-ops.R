@@ -49,8 +49,6 @@ drop_table = function(relation) {
 
 #' Create tables for each `koral_relation` defined in the current scope.
 #'
-#' @inheritParams create_table
-#'
 #' @rdname migrations
 #' @export
 create_tables = function(drop_if_exists = FALSE) {
@@ -110,9 +108,6 @@ get_all = function(relation, ..., .limit = NULL) {
 }
 
 #' Get a single record satisfying key-value filters in the dots.
-#'
-#' @inheritParams
-#' @inheritDotParams
 #'
 #' @return A `list` representing the record.
 get_one = function(relation, ...) {
