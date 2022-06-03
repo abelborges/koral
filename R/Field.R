@@ -6,6 +6,8 @@
 #'
 #' @param name Field name.
 #' @param type Field PostgreSQL type.
+#' @param many If `TRUE`, field is modeled as an array of values of type `type`.
+#'             Defaults to `FALSE`.
 #' @param pk Logical. Is it part of the relation's Primary Key?
 #' @param fk Set to a `ForeignKey`-returned object in case the field is constrained to
 #'           the values of a field in another relation.
@@ -35,6 +37,7 @@
 Field = function(
   name = NULL,
   type = NULL,
+  many = FALSE,
   pk = FALSE,
   fk = NULL,
   default = \() NULL,
@@ -72,12 +75,6 @@ StringField = function(name, parser = \(x) as.character(x[[name]])[1], ...) {
 
 #' @rdname field
 #' @export
-StringArrayField = function(name, parser = \(x) as.character(x[[name]]), ...) {
-  Field(name, "VARCHAR[]", parser = parser, ...)
-}
-
-#' @rdname field
-#' @export
 EnumField = function(name, values, parser = \(x) as.character(x[[name]])[1], ...) {
   assert_class("character", values)
   if (length(values) == 0L) stop("Empty enum `values`")
@@ -94,20 +91,8 @@ DoubleField = function(name, parser = \(x) as.numeric(x[[name]])[1], ...) {
 
 #' @rdname field
 #' @export
-DoubleArrayField = function(name, parser = \(x) as.numeric(x[[name]]), ...) {
-  Field(name, "DOUBLE PRECISION[]", parser = parser, ...)
-}
-
-#' @rdname field
-#' @export
 IntegerField = function(name, parser = \(x) as.integer(x[[name]])[1], ...) {
   Field(name, "INTEGER", parser = parser, ...)
-}
-
-#' @rdname field
-#' @export
-IntegerArrayField = function(name, parser = \(x) as.integer(x[[name]]), ...) {
-  Field(name, "INTEGER[]", parser = parser, ...)
 }
 
 #' @rdname field
@@ -118,32 +103,14 @@ BigIntField = function(name, parser = \(x) bit64::as.integer64(x[[name]])[1], ..
 
 #' @rdname field
 #' @export
-BigIntArrayField = function(name, parser = \(x) bit64::as.integer64(x[[name]]), ...) {
-  Field(name, "BIGINT[]", parser = parser, ...)
-}
-
-#' @rdname field
-#' @export
 DateField = function(name, parser = \(x) .date_parser(as.character(x[[name]]))[1], ...) {
   Field(name, "DATE", parser = parser, ...)
 }
 
 #' @rdname field
 #' @export
-DateArrayField = function(name, parser = \(x) .date_parser(as.character(x[[name]])), ...) {
-  Field(name, "DATE[]", parser = parser, ...)
-}
-
-#' @rdname field
-#' @export
 TimestampField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]]))[1], ...) {
   Field(name, "TIMESTAMP", parser = parser, ...)
-}
-
-#' @rdname field
-#' @export
-TimestampArrayField = function(name, parser = \(x) .timestamp_parser(as.character(x[[name]])), ...) {
-  Field(name, "TIMESTAMP[]", parser = parser, ...)
 }
 
 #' @rdname field
@@ -187,6 +154,7 @@ timestamps = function() list(
   if (.cant_be_null(f)) f$nullable = FALSE
   if (is.function(f$update_trigger)) f$updatable = TRUE
   if (!.valid_default(f)) f$default = \() NULL else if (.has_default_val(f)) f$default = \() f$default
+  if (f$many) f$type = paste0(f$type, "[]")
 
   f
 }
