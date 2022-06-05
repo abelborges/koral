@@ -167,9 +167,8 @@ get_one = function(relation, ...) {
       next
     }
 
-    default = field$default()
-    if (!is.null(default)) {
-      output[[k]] = default
+    if (!is.null(field$default)) {
+      output[[k]] = field$default()
       next
     }
 

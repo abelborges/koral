@@ -93,14 +93,6 @@ orderby = function(xs, f, ...) {
   xs[ordered_indices]
 }
 
-lupsert = function(x, y) {
-  assert_class("list", x, y)
-  for (z in list(x, y)) stopifnot(names(z) |> not_null() |> all())
-  z = x
-  for (key in names(y)) z[[key]] = y[[key]]
-  z
-}
-
 concat_unnamed_lists = function(x, y) {
   z = x
   counter = length(z)

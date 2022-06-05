@@ -11,7 +11,7 @@
 #' @param pk Logical. Is it part of the relation's Primary Key?
 #' @param fk Set to a `ForeignKey`-returned object in case the field is constrained to
 #'           the values of a field in another relation.
-#' @param default Fill with either a function or a value to be used in `INSERT` queries
+#' @param default Fill with either a zero-arity function or a value to be used in `INSERT` queries
 #'                in case input data skips this field.
 #' @param nullable Logical. Is it allowed to be null?
 #' @param unique Logical. Should there be a 1:1 mapping between the field and the PK?
@@ -40,7 +40,7 @@ Field = function(
   many = FALSE,
   pk = FALSE,
   fk = NULL,
-  default = \() NULL,
+  default = NULL,
   nullable = FALSE,
   unique = FALSE,
   transient = FALSE,
@@ -135,10 +135,10 @@ timestamps = function() list(
 # private
 
 .has_default_val  = function(f) is.atomic(f$default) && !is.null(f$default)
-.valid_default    = function(f) is.function(f$default) || .has_default_val(f)
+.valid_default    = function(f) is.null(f$default) || is.function(f$default)
 .is_fk            = function(f) is(f$fk, .FK_DECL)
 .is_valid_fk      = function(f) is.null(f$fk) || .is_fk(f)
-.cant_be_null     = function(f) f$pk || .is_fk(f) || f$unique || .valid_default(f)
+.cant_be_null     = function(f) f$pk || .is_fk(f) || f$unique || !is.null(f$default)
 
 .date_parser      = function(x) lubridate::fast_strptime(x, "%Y-%m-%d", "UTC")
 .timestamp_parser = function(x) lubridate::fast_strptime(x, "%Y-%m-%d %H:%M:%OS", "UTC")
@@ -151,9 +151,12 @@ timestamps = function() list(
       stop("Nested array fields must define both `parser` and `db_parser`")
   }
   if (!.is_valid_fk(f)) stop("Non-null `fk`s should be a ForeingKey() call")
-  if (.cant_be_null(f)) f$nullable = FALSE
   if (is.function(f$update_trigger)) f$updatable = TRUE
-  if (!.valid_default(f)) f$default = \() NULL else if (.has_default_val(f)) f$default = \() f$default
+  if (!.valid_default(f)) {
+    f$default = NULL
+    f = do.call(Field, f)
+  } else if (.has_default_val(f)) f$default = \() f$default
+  if (.cant_be_null(f)) f$nullable = FALSE
   if (f$many) f$type = paste0(f$type, "[]")
 
   f
