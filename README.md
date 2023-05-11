@@ -1,6 +1,8 @@
 # koral
 
-Minimalistic ORM for R. Easily declare
+⚠️ This is an exercise at the moment, use at your own discretion.
+
+Postgres data mapping helpers for R. Easily declare
 entities, as well as their fields and constraints,
 and get back the whole machinery for database interactions.
 As of now, it's focused on the
