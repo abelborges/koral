@@ -33,11 +33,14 @@ as_vec = function(x) unlist(x, recursive = TRUE, use.names = FALSE)
 first_scalar = function(x) as_vec(x)[[1]]
 is_map = function(x) is.list(x) && !is.null(names(x))
 
+assert_equals = function(x, y) {
+  if (!identical(x, y)) stop(paste(x, "should equal", y))
+}
+
 assert_class = function(cls, ...) {
   for (x in list(...)) {
     if (!is(x, cls)) stop(paste("class of", x, "is not", cls))
   }
-  return(invisible(TRUE))
 }
 
 assert_class_or_null = function(cls, ...) {
@@ -45,7 +48,6 @@ assert_class_or_null = function(cls, ...) {
     if (is.null(x)) next
     assert_class(cls, x)
   }
-  return(invisible(TRUE))
 }
 
 bcrypt_hash = function(x) {
@@ -130,4 +132,9 @@ flatten = function(input, where = is_map, ...) {
 
 count = function(x, predicate, ...) {
   x |> where(predicate, ...) |> length()
+}
+
+set_postgres = function(...) {
+  args = list(RPostgres::Postgres(), ...)
+  options("koral_dbargs" = args)
 }

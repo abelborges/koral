@@ -2,6 +2,7 @@
 % Please edit documentation in R/Field.R
 \name{Field}
 \alias{Field}
+\alias{BooleanField}
 \alias{StringField}
 \alias{EnumField}
 \alias{DoubleField}
@@ -20,17 +21,20 @@ Field(
   many = FALSE,
   pk = FALSE,
   fk = NULL,
-  default = function() NULL,
+  default = NULL,
   nullable = FALSE,
   unique = FALSE,
   transient = FALSE,
   updatable = TRUE,
+  enums = NULL,
   update_trigger = NULL,
   parser = NULL,
   db_parser = identity,
   db_check = NULL,
   deduced = FALSE
 )
+
+BooleanField(name, parser = function(x) as.character(x[[name]])[1], ...)
 
 StringField(name, parser = function(x) as.character(x[[name]])[1], ...)
 
@@ -73,7 +77,7 @@ Defaults to \code{FALSE}.}
 \item{fk}{Set to a \code{ForeignKey}-returned object in case the field is constrained to
 the values of a field in another relation.}
 
-\item{default}{Fill with either a function or a value to be used in \code{INSERT} queries
+\item{default}{Fill with either a zero-arity function or a value to be used in \code{INSERT} queries
 in case input data skips this field.}
 
 \item{nullable}{Logical. Is it allowed to be null?}
@@ -85,6 +89,9 @@ declare raw password fields with \code{transient = TRUE}, so that they
 are encrypted before being persisted.}
 
 \item{updatable}{Logical. Is it allowed to be updated after record creation?}
+
+\item{enums}{If not \code{NULL}, the StringField is an enum, and these are its values.
+This is implemented with a CHECK constraint.}
 
 \item{update_trigger}{Fill with a 0-parameter function whose return value is used
 to update the field during \code{UPDATE} queries.}

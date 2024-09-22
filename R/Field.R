@@ -19,6 +19,8 @@
 #'                  declare raw password fields with `transient = TRUE`, so that they
 #'                  are encrypted before being persisted.
 #' @param updatable Logical. Is it allowed to be updated after record creation?
+#' @param enums If not `NULL`, the StringField is an enum, and these are its values.
+#'              This is implemented with a CHECK constraint.
 #' @param update_trigger Fill with a 0-parameter function whose return value is used
 #'                       to update the field during `UPDATE` queries.
 #' @param parser Function of a named list representing a record whose return value is
@@ -45,6 +47,7 @@ Field = function(
   unique = FALSE,
   transient = FALSE,
   updatable = TRUE,
+  enums = NULL,
   update_trigger = NULL,
   parser = NULL,
   db_parser = identity,
@@ -69,8 +72,14 @@ ForeignKey = function(relation, field = NULL) {
 
 #' @rdname field
 #' @export
+BooleanField = function(name, parser = \(x) as.logical(x[[name]])[1], ...) {
+  Field(name, "BOOLEAN", parser = parser, ...)
+}
+
+#' @rdname field
+#' @export
 StringField = function(name, parser = \(x) as.character(x[[name]])[1], ...) {
-  Field(name, "VARCHAR", parser = parser, ...)
+  Field(name, "TEXT", parser = parser, ...)
 }
 
 #' @rdname field
@@ -78,9 +87,10 @@ StringField = function(name, parser = \(x) as.character(x[[name]])[1], ...) {
 EnumField = function(name, values, parser = \(x) as.character(x[[name]])[1], ...) {
   assert_class("character", values)
   if (length(values) == 0L) stop("Empty enum `values`")
+  values = values |> unname() |> unique() |> sort()
   if (length(values) == 1L) warning("Declaring enum field with a single value")
   db_check = sprintf("CHECK (%s IN %s)", name, .as_sql_list(values))
-  Field(name, "VARCHAR", parser = parser, db_check = db_check, ...)
+  Field(name, "TEXT", parser = parser, db_check = db_check, enums = values, ...)
 }
 
 #' @rdname field
